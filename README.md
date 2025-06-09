@@ -26,5 +26,8 @@ Here’s a list of the components essential (currently) for this smart lighting 
 **5V Power:** LEDs all require a 5V power supply.  
 For the 5V power supply, I used a small step-down board to convert a 12V solar power source to 5V.  
 
+
+![This is wiring diagram.](https://forgani.com/wp-content/2025/06/front-lights.jpg)
+
 > [!NOTE]
 > For more information: [Outdoor Lighting with Motion Detection & HA Integration](https://forgani.com/electronics-projects/outdoor-lighting-with-motion-detection-ha-integration/).

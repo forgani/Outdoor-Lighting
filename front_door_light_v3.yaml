@@ -1,0 +1,348 @@
+##*******************************************************************************
+# ESP32 C3 based 
+# The entry_outdoor_light
+# Manny Forgani, forgani.com
+# esphome config/compile/upload/run/logs __.yaml
+# More information at: https://forgani.com/electronics-projects/outdoor-lighting-with-motion-detection-ha-integration/
+# initial 24 Mai. 2025
+# pip3 install esphome -U
+# esp32c-super-mini3
+# ******************************************************************************/
+substitutions:
+  device_name: front_lights_v3
+  friendly_name: "Front Lights v3"
+  log_level: "DEBUG" # "INFO" # "DEBUG"
+  matrix_pin: GPIO09
+  christmas_lights_pin: GPIO10
+  rcwl_0516_pin: GPIO04
+
+globals:
+  - id: random_int_var
+    type: int
+    restore_value: no
+    initial_value: '0'
+    
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: arduino
+  
+logger:
+  level: ${log_level}
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+    
+wifi:
+  ssid: !secret iot_wifi_ssid
+  password: !secret iot_wifi_password
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+api:
+  encryption:
+    key: !secret encryption
+
+captive_portal:
+
+# esp32
+light: 
+  - platform: fastled_clockless 
+    chipset: WS2812B
+    pin: ${matrix_pin}
+    num_leds: 86
+    rgb_order: GRB
+    id: ${device_name}_matrix
+    name: ${device_name} Matrix
+    effects:
+      - random:
+          name: "random"
+          transition_length: 5s
+          update_interval: 10s
+      - addressable_lambda: # Fire Red
+          #name: "fireRed"
+          name: "1.0"
+          update_interval: 15ms
+          lambda: |-
+            int Cooling = 45;
+            int Sparking = 110;
+            static byte heat[82];
+            int cooldown;
+            // Cool down every cell a little
+            for( int i = 0; i < it.size(); i++) {
+              cooldown = random(0, ((Cooling * 10) / it.size()) + 2);
+              if(cooldown>heat[i]) {
+                heat[i]=0;
+              } else {
+                heat[i]=heat[i]-cooldown;
+              }
+            }
+            // Heat from each cell drifts 'up' and diffuses a little
+            for( int k= it.size() - 1; k >= 2; k--) {
+              heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
+            }
+            // Randomly ignite new 'sparks' near the bottom
+            if( random(255) < Sparking ) {
+              int y = random(7);
+              heat[y] = heat[y] + random(160,255);
+            }
+            // Convert heat to LED colors
+            for( int j = 0; j < it.size(); j++) {
+              // Scale 'heat' down from 0-255 to 0-191
+              byte t192 = round((heat[j]/255.0)*191);
+              // calculate ramp up from
+              byte heatramp = t192 & 0x3F; // 0..63
+              heatramp <<= 2; // scale up to 0..252
+              if( t192 > 0x80) {
+                it[it.size() - j - 1] = esphome::Color(255, 255, heatramp);
+              } else if( t192 > 0x40 ) { 
+                it[it.size() - j - 1] = esphome::Color(255, heatramp, 0);
+              } else { 
+                it[it.size() - j - 1] = esphome::Color(heatramp, 0, 0);
+              }
+            }            
+      - addressable_lambda: # Fire Green
+          #name: "Fire Green"
+          name: "2.0"
+          update_interval: 15ms
+          lambda: |-
+            int Cooling = 45; // More cooling = shorter flames
+            int Sparking = 110; // Higher = more roaring fire
+            static byte heat[188];
+            int cooldown;
+            for (int i = 0; i < it.size(); i++) {
+              cooldown = random(0, ((Cooling * 10) / it.size()) + 2);
+              if (cooldown > heat[i]) {
+                heat[i] = 0;
+              } else {
+                heat[i] = heat[i] - cooldown;
+              }
+            }
+            for (int k = it.size() - 1; k >= 2; k--) {
+              heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
+            }
+            if (random(255) < Sparking) {
+              int y = random(7);
+              heat[y] = heat[y] + random(160, 255);
+            }
+            for (int j = 0; j < it.size(); j++) {
+              byte t192 = round((heat[j] / 255.0) * 191);
+              byte heatramp = t192 & 0x3F; // 0..63
+              heatramp <<= 2; // scale up to 0..252
+              if (t192 > 0x80) { // hottest
+                it[it.size() - j - 1] = esphome::Color(255, heatramp * 0.9, 0);
+              } else if (t192 > 0x40) { // middle
+                it[it.size() - j - 1] = esphome::Color(heatramp, 255, 0);
+              } else { // coolest
+                it[it.size() - j - 1] = esphome::Color(0, heatramp, 0);
+              }
+            }
+      - addressable_lambda: # Fire Blue
+          #name: "fireBlue"
+          name: "3.0"
+          update_interval: 15ms
+          lambda: |-
+            int Cooling = 45;
+            int Sparking = 110;
+            static byte heat[188];
+            int cooldown;
+            // Cool down every cell a little
+            for( int i = 0; i < it.size(); i++) {
+              cooldown = random(0, ((Cooling * 10) / it.size()) + 2);
+              if(cooldown>heat[i]) {
+                heat[i]=0;
+              } else {
+                heat[i]=heat[i]-cooldown;
+              }
+            }
+            // Heat from each cell drifts 'up' and diffuses a little
+            for( int k= it.size() - 1; k >= 2; k--) {
+              heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
+            }
+            // Randomly ignite new 'sparks' near the bottom
+            if( random(255) < Sparking ) {
+              int y = random(7);
+              heat[y] = heat[y] + random(160,255);
+            }
+            // Convert heat to LED colors
+            for( int j = 0; j < it.size(); j++) {
+              // Scale 'heat' down from 0-255 to 0-191
+              byte t192 = round((heat[j]/255.0)*191);
+              // calculate ramp up from
+              byte heatramp = t192 & 0x3F; // 0..63
+              heatramp <<= 2; // scale up to 0..252
+              if( t192 > 0x80) { 
+                it[it.size() - j - 1] = esphome::Color(heatramp, 255, 255);
+              } else if( t192 > 0x40 ) {
+                it[it.size() - j - 1] = esphome::Color(0, heatramp, 255);
+              } else {
+                it[it.size() - j - 1] = esphome::Color(0, 0, heatramp);
+              }
+            }   
+
+      - !include effects/blueFire.yaml 
+      - !include effects/fire.yaml
+      - !include effects/fireplace.yaml
+      - addressable_lambda: #Wipe down off
+          name: "Wipe down off"
+          update_interval: 20ms
+          lambda: |-
+            static int x = 0;
+            if (initial_run) {
+              x = it.size();
+            }
+            if (x > 0) {
+              x -= 1;
+              it[x] = ESPColor(0,0,0);
+            }   
+      - addressable_lambda: #Wipe down on
+          name: "Wipe down on"
+          update_interval: 20ms
+          lambda: |-
+            static int x = 0;
+            if (initial_run) {
+              x = it.size();
+              it.all() = ESPColor(0,0,0);
+            }
+            if (x > 0) {
+              it[x] = current_color;
+              x -= 1;
+            }
+  # PWM dimming
+  - platform: monochromatic
+    output: ${device_name}_christmas_lights_mosfet
+    name: ${device_name} "christmas_lights"
+
+
+
+binary_sensor:
+  # RCWL-0516 Radar Sensor
+  - platform: gpio
+    pin: 
+      number: ${rcwl_0516_pin}
+      #setup_priority: 599
+      mode: INPUT_PULLUP
+    name: ${device_name} Microwave Sensor
+    device_class: motion
+    id: ${device_name}_microwave_sensor
+    on_press:
+      then:
+        - if:
+            condition:
+              and:
+                - light.is_off: ${device_name}_matrix
+                #- sun.is_below_horizon
+            then:
+              - light.turn_on: 
+                  id: ${device_name}_matrix
+                  effect: "random"
+              - delay: !lambda "return id(front_lights_rnd_timer_slider).state * 1000;"  # milliseconds
+              - light.turn_on:
+                  id: ${device_name}_matrix
+                  effect: !lambda |-
+                    char buffer[50]; 
+                    sprintf(buffer, "%.1f", id(random_int).state); 
+                    std::string str(buffer); // Convert char array to string
+                    return str;
+    on_release:
+      then:
+        - if:
+            condition:
+              any: 
+                #- light.is_on: ${device_name}_matrix
+                - switch.is_off: ${device_name}_leds_permanently_switch
+                #- sun.is_above_horizon
+            then:
+              - delay: !lambda "return id(front_lights_timer_slider).state * 1000;"  # milliseconds
+              - light.turn_on:
+                  id: ${device_name}_matrix
+                  effect: "Wipe down off"
+              - delay: 1s
+              - light.turn_off: ${device_name}_matrix
+                 
+switch:
+  - platform: template
+    #setup_priority: 599
+    name: ${device_name} "light permanently switch"
+    id: ${device_name}_leds_permanently_switch
+    turn_on_action:
+      - light.turn_on:
+          id: ${device_name}_matrix
+          blue: !lambda "return id(front_lights_brightness_value).state;"
+          effect: "Wipe down on"
+      
+sensor:
+  - platform: homeassistant
+    id: front_lights_timer_slider
+    name: front_lights Timer Slider
+    entity_id: input_number.front_lights_timer_slider
+    #internal: true
+  - platform: homeassistant
+    id: front_lights_brightness_value
+    name: front_lights Timer Slider
+    entity_id: input_number.front_lights_brightness_value
+    #internal: true
+  - platform: homeassistant
+    id: front_lights_rnd_timer_slider
+    name: front_lights Timer Slider
+    entity_id: input_number.front_lights_rnd_timer_slider
+    #internal: true
+  - platform: uptime
+    name: ${device_name} Uptime
+    update_interval: 5s
+    unit_of_measurement: s
+    accuracy_decimals: 0
+    force_update: false
+    icon: mdi:timer
+  # WiFi Signal sensor.
+  - platform: wifi_signal
+    name: ${device_name} WiFi Signal
+    update_interval: 5s
+    unit_of_measurement: dB
+    accuracy_decimals: 0
+    force_update: false
+    icon: mdi:wifi
+  - platform: template
+    name: "Random Int"
+    id: random_int
+    lambda: |-
+      // rand() % (max_number + 1) + minimum_number
+      id(random_int_var) = (rand() % (6)) + 1;
+      return id(random_int_var);
+    accuracy_decimals: 0
+    update_interval: 5s
+
+sun:
+  latitude: !secret latitude
+  longitude: !secret longitude
+  
+output:
+  - platform: ledc # esp8266_pwm # ledc # esp8266_pwm
+    pin: ${christmas_lights_pin}
+    frequency: 20000Hz
+    id: ${device_name}_christmas_lights_mosfet
+
+# Enable time component to reset energy at midnight
+time:
+  - platform: sntp
+    timezone: "Europe/Paris"
+    
+# Get the WiFi details
+text_sensor:
+  - platform: version
+    name: "${device_name} esphome version" 
+  - platform: wifi_info
+    ip_address:
+      name: "${device_name} IP Address"
+    ssid:
+      name: "${device_name} SSID"
+    mac_address:
+      name: "${device_name} Mac Address"

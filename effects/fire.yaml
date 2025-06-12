@@ -1,0 +1,14 @@
+# Simple Fire effect with random flickering of red to yellow pixels and white-ish accents
+# Fading out to the LED stripe ends for more realistic effect
+addressable_lambda:
+  #name: "Fire Code"
+  name: "5.0"
+  update_interval: 50ms
+  lambda: |-
+    for (uint8_t i = 0; i < it.size(); i++) {                                        
+      float brightness = (it.size()/2 - abs(it.size()/2 - i)) / (float)((it.size()/2)); //center effect, fade out to the edges
+      int whiteness = random(64 * brightness);                                    //add some white, centered
+      int redness = random(64) + random(127 * brightness);                        //make red
+      int greeness = random(redness/2);                                           //add some green to give it a yellow tint
+      it[i] = ESPColor(whiteness + redness, whiteness + greeness, whiteness);
+    }

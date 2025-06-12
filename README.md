@@ -25,6 +25,8 @@ Here’s a list of the components essential (currently) for this smart lighting 
 **Light Dependent Resistor (LDR):**  optimal3.3V Power: require for ESP32 and motion sensors.  
 **5V Power:** LEDs all require a 5V power supply.  
 For the 5V power supply, I used a small step-down board to convert a 12V solar power source to 5V.  
+  
+I found all the effects in the Home Assistant community and made some changes for my purposes.  
 
 
 ![This is wiring diagram.](https://forgani.com/wp-content/2025/06/front-lights.jpg)
